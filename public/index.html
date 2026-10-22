@@ -69,7 +69,14 @@ function render(){
 if(!room)return;
 $("gameTitle").textContent=titles[room.game]||"DUEL UP";
 $("roomInfo").textContent="Room code: "+room.code;
-$("status").textContent=room.message||"Game ready";
+
+if (room.game === "pong" && room.status === "finished" && room.winner) {
+  const winnerName = room.players[room.winner - 1]?.name || `Player ${room.winner}`;
+  $("status").textContent = `${winnerName} wins! ${room.message || ""}`;
+} else {
+  $("status").textContent = room.message || "Game ready";
+}
+
 $("rules").textContent=rules[room.game]||"Take turns and try to win.";
 $("waitBox").classList.toggle("hide",room.players.length>=2);
 $("players").innerHTML=room.players.map((p,i)=>`<div class="stat" style="margin-bottom:8px"><strong style="font-size:15px">${escapeHtml(p.name)} ${p.id===myId?"(You)":""}</strong><span>${room.players.length<2?"WAITING FOR OPPONENT":("PLAYER "+(i+1)+(room.turn===i+1&&room.status==="playing"?" · TURN":""))}</span></div>`).join("");
