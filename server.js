@@ -308,7 +308,7 @@ function reject(socket, msg) {
   socket.emit("action:error", msg);
 }
 
-Continue the same `server.js` file by pasting this immediately after the last line above. This is the remainder of the file:
+
 
 ```javascript
 io.on("connection", socket => {
