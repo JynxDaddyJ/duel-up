@@ -26,15 +26,15 @@ function emptyRoom(game, host, name, isPublic = false) {
   };
 }
 function initGame(room) {
-  room.status = "playing"; room.winner = null; room.turn = 1;
+  room.status = room.game === "ships" ? "placing" : "playing"; room.winner = null; room.turn = 1;
   if (room.game === "ttt") room.board = Array(9).fill(0);
   if (room.game === "connect") room.board = Array(42).fill(0);
   if (room.game === "ships") {
-    room.board = { shots: [Array(100).fill(""), Array(100).fill("")], fleets: [fleet(), fleet()], hits: [0,0] };
+    room.board = { shots: [Array(100).fill(""), Array(100).fill("")], fleets: [null, null], ships: [null, null], ready: [false, false], hits: [0,0] };
   }
   if (room.game === "pong") room.board = { cups: [Array(6).fill(false), Array(6).fill(false)], throws: [0,0] };
   if (room.game === "pool") room.board = { balls: poolRack(), shots: [0,0], pocketed: [0,0] };
-  room.message = `${room.players[0].name} vs ${room.players[1].name} — ${room.players[0].name}'s turn.`;
+  room.message = room.game === "ships" ? "Place your ships, then press Ready. The battle starts when both players are ready." : `${room.players[0].name} vs ${room.players[1].name} — ${room.players[0].name}'s turn.`;
 }
 function fleet() {
   const b = Array(100).fill(false);
@@ -59,16 +59,49 @@ function poolRack() {
   return balls;
 }
 function playerIndex(room, id) { return room.players.findIndex(p=>p.id===id); }
-function snapshot(room) {
-  // Never send either Battleship fleet to clients.
+function snapshot(room, viewerId) {
   const board = room.board ? JSON.parse(JSON.stringify(room.board)) : null;
-  if (room.game === "ships" && board) delete board.fleets;
+  if (room.game === "ships" && board) {
+    const idx = playerIndex(room, viewerId);
+    const original = board;
+    const privateBoard = {
+      shots: original.shots,
+      ready: original.ready,
+      hits: original.hits,
+      ownFleet: idx >= 0 && original.fleets[idx] ? original.fleets[idx] : Array(100).fill(false),
+      ownShips: idx >= 0 && original.ships[idx] ? original.ships[idx] : [],
+      incoming: idx >= 0 ? original.shots[1-idx] : Array(100).fill(""),
+      outgoing: idx >= 0 ? original.shots[idx] : Array(100).fill(""),
+      sunkShips: idx >= 0 && original.ships[1-idx] ? original.ships[1-idx].filter(ship => ship.every(cell => original.shots[idx][cell] === "H")).length : 0
+    };
+    return {
+      code: room.code, game: room.game, players: room.players.map((p,i)=>({id:p.id, name:p.name, mark:i+1, connected:io.sockets.sockets.has(p.id)})),
+      status: room.status, turn: room.turn, winner: room.winner, message: room.message, board: privateBoard
+    };
+  }
   return {
     code: room.code, game: room.game, players: room.players.map((p,i)=>({id:p.id, name:p.name, mark:i+1, connected:io.sockets.sockets.has(p.id)})),
     status: room.status, turn: room.turn, winner: room.winner, message: room.message, board
   };
 }
-function emitRoom(room) { io.to(room.code).emit("room:update", snapshot(room)); }
+function emitRoom(room) { for (const p of room.players) io.to(p.id).emit("room:update", snapshot(room, p.id)); }
+function validateShips(ships) {
+  if (!Array.isArray(ships) || ships.length !== 4) return null;
+  const lengths = [4,3,3,2], used = new Set(), fleet = Array(100).fill(false), clean = [];
+  for (let n=0; n<lengths.length; n++) {
+    const ship = ships[n];
+    if (!Array.isArray(ship) || ship.length !== lengths[n] || ship.some(i => !Number.isInteger(i) || i < 0 || i > 99)) return null;
+    if (new Set(ship).size !== ship.length || ship.some(i => used.has(i))) return null;
+    const rows = ship.map(i => Math.floor(i/10)), cols = ship.map(i => i%10);
+    const horizontal = rows.every(r => r === rows[0]) && [...cols].sort((a,b)=>a-b).every((c,j)=>j===0 || c === [...cols].sort((a,b)=>a-b)[j-1]+1);
+    const vertical = cols.every(c => c === cols[0]) && [...rows].sort((a,b)=>a-b).every((r,j)=>j===0 || r === [...rows].sort((a,b)=>a-b)[j-1]+1);
+    if (!horizontal && !vertical) return null;
+    ship.forEach(i => { used.add(i); fleet[i] = true; });
+    clean.push([...ship]);
+  }
+  return { fleet, ships: clean };
+}
+
 function findRoomBySocket(id) { for (const room of rooms.values()) if (playerIndex(room,id)!==-1) return room; return null; }
 function closeRoom(room, message) {
   room.status = "finished"; room.winner = 0; room.message = message; emitRoom(room);
@@ -149,6 +182,29 @@ io.on("connection", socket => {
     const i=queue.findIndex(q=>q.id===socket.id);if(i!==-1)queue.splice(i,1);
     socket.emit("match:cancelled");io.emit("lobby:count",queue.length);
   });
+  socket.on("ships:place", ({ships}={}) => {
+    const room = findRoomBySocket(socket.id);
+    if (!room || room.game !== "ships" || room.status !== "placing") return reject(socket, "Ship placement is not open right now.");
+    const idx = playerIndex(room, socket.id), b = room.board;
+    if (b.ready[idx]) return reject(socket, "You are already ready. Ask for a rematch to change your fleet.");
+    const valid = validateShips(ships);
+    if (!valid) return reject(socket, "That fleet is invalid. Place ships of lengths 4, 3, 3, and 2 without overlap.");
+    b.fleets[idx] = valid.fleet; b.ships[idx] = valid.ships;
+    room.message = `${room.players[idx].name} has placed their fleet.`;
+    emitRoom(room);
+  });
+  socket.on("ships:ready", () => {
+    const room = findRoomBySocket(socket.id);
+    if (!room || room.game !== "ships" || room.status !== "placing") return reject(socket, "Ship placement is not open right now.");
+    const idx = playerIndex(room, socket.id), b = room.board;
+    if (!b.ships[idx] || b.ships[idx].length !== 4) return reject(socket, "Place all four ships before pressing Ready.");
+    b.ready[idx] = true;
+    if (b.ready.every(Boolean)) {
+      room.status = "playing"; room.turn = 1;
+      room.message = `${room.players[0].name} vs ${room.players[1].name} — battle starts! ${room.players[0].name} fires first.`;
+    } else room.message = `${room.players[idx].name} is ready. Waiting for the other player to finish placing ships.`;
+    emitRoom(room);
+  });
   socket.on("game:move", payload => {
     const room=findRoomBySocket(socket.id);if(!room||room.status!=="playing")return reject(socket,"You're not in an active match.");
     const idx=playerIndex(room,socket.id), p=idx+1, b=room.board;
@@ -172,10 +228,12 @@ io.on("connection", socket => {
     } else if(room.game==="ships"){
       const i=Number(payload?.index);
       if(!Number.isInteger(i)||i<0||i>99||b.shots[idx][i])return reject(socket,"You've already fired at that square.");
+      if (!b.fleets[1-idx]) return reject(socket, "Your opponent hasn't finished placing ships yet.");
       b.shots[idx][i]=b.fleets[1-idx][i]?"H":"M";
       if(b.shots[idx][i]==="H")b.hits[idx]++;
-      if(b.hits[idx]>=12)finish(room,p,`${room.players[p-1].name} destroyed the fleet!`);
-      else {nextTurn(room);room.message=b.shots[idx][i]==="H"?"Direct hit!": "Miss.";room.message+=` ${room.players[room.turn-1].name}'s turn.`;emitRoom(room);}
+      const sunkCount = b.ships[1-idx].filter(ship => ship.every(cell => b.shots[idx][cell] === "H")).length;
+      if(b.hits[idx]>=12)finish(room,p,`${room.players[p-1].name} destroyed the entire fleet!`);
+      else {nextTurn(room);room.message=b.shots[idx][i]==="H"?(sunkCount>0?`Hit! ${sunkCount} of 4 enemy ships sunk.`:"Direct hit!"):"Miss.";room.message+=` ${room.players[room.turn-1].name}'s turn.`;emitRoom(room);}
     } else if(room.game==="pong"){
       const i=Number(payload?.cup);
       if(!Number.isInteger(i)||i<0||i>5||b.cups[idx][i]||b.throws[idx]>=10)return reject(socket,"That cup isn't available.");
