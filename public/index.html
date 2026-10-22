@@ -65,4 +65,806 @@ h1{font-size:clamp(35px,6vw,56px);line-height:1.03;letter-spacing:-2px;margin:12
 .ttt button{aspect-ratio:1;border:1px solid var(--line);border-radius:14px;background:#ffffff07;font-size:clamp(30px,7vw,50px);font-weight:900;color:var(--cyan)}
 .ttt button:nth-child(even){color:var(--pink)}
 .ttt button:disabled{cursor:default}
-.c4{display:grid;grid-template-columns:repeat(7,min(8
+.c4{display:grid;grid-template-columns:repeat(7,min(8.5vw,52px));gap:5px;padding:9px;background:#343e8b;border-radius:13px}
+.c4 button{aspect-ratio:1;border-radius:50%;background:#11172b;border:2px solid #6672bf;padding:0}
+.c4 button.p1{background:#ff647c}
+.c4 button.p2{background:#ffd166}
+.ships{display:grid;grid-template-columns:repeat(10,min(7.2vw,36px));gap:3px}
+.ships button{aspect-ratio:1;border-radius:5px;background:#1a2940;border:1px solid #314765;padding:0;font-size:13px}
+.ships button.hit{background:#ff647c}
+.ships button.miss{background:#64c9f5;color:#0b1420}
+.ships button.ship{background:#64f5dc;color:#0b1420}
+.ships button.incoming{outline:2px solid #ff647c;outline-offset:-3px}
+.ship-tools{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:100%;margin:0 0 12px}
+.ship-tools button.selected{border-color:var(--cyan);background:#163c3b}
+.ship-grid-wrap{display:grid;grid-template-columns:1fr;gap:18px;justify-items:center}
+.ship-board-title{font-weight:800;color:var(--cyan);text-align:center;margin:8px 0}
+.ship-boards{display:grid;grid-template-columns:1fr 1fr;gap:22px;justify-items:center;width:100%}
+.ship-boards .ships{grid-template-columns:repeat(10,min(4.5vw,30px))}
+.ships button:disabled{cursor:default;opacity:1}
+.pooltable{position:relative;width:min(100%,760px);aspect-ratio:1.8;background:#126447;border:clamp(10px,2vw,18px) solid #704326;border-radius:17px;box-shadow:inset 0 0 0 3px #b68a5b,0 12px 35px #0005;overflow:hidden;touch-action:none}
+.poolcanvas{display:block;width:100%;height:100%;touch-action:none;cursor:crosshair}
+.pool-help{max-width:760px;text-align:center;color:var(--muted);font-size:12px;margin:10px auto 0}
+.pool-hud{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:0 0 12px}
+.pool-chip{border:1px solid var(--line);background:#ffffff08;padding:7px 11px;border-radius:9px;font-size:12px}
+.controls{display:flex;gap:9px;align-items:center;flex-wrap:wrap;justify-content:center;margin-top:16px}
+.range{accent-color:var(--cyan);width:100px}
+.sidepanel{align-self:start}
+.actionlist{display:grid;gap:8px}
+.actionlist button{text-align:left;width:100%}
+.divider{height:1px;background:var(--line);margin:17px 0}
+.footer{border-top:1px solid #ffffff12;margin-top:26px;padding-top:16px;color:#77819c;font-size:11px;display:flex;justify-content:space-between;gap:10px}
+.toast{position:fixed;bottom:20px;left:50%;transform:translate(-50%,20px);opacity:0;pointer-events:none;background:#202941;border:1px solid #3e4b69;padding:11px 15px;border-radius:12px;z-index:20;font-size:13px;max-width:90vw;text-align:center;transition:.2s}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.waitbox{border:1px dashed #44506b;border-radius:12px;padding:17px;text-align:center;margin-top:14px}
+.hide{display:none!important}
+@media(max-width:760px){.app{padding:0 14px 32px}.hero{padding:31px 0 18px}.games{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.gamecard{padding:13px;min-height:167px}.cardbottom{left:13px;right:11px}.lower{grid-template-columns:1fr}.game-layout{grid-template-columns:1fr}.boardpanel{min-height:320px}.footer{flex-direction:column}}
+@media(max-width:390px){.games{grid-template-columns:1fr}.gamecard{min-height:150px}.ships{gap:2px}.ships button{font-size:10px}.c4{gap:3px;padding:6px}}
+</style>
+</head>
+<body>
+<div class="app">
+<header class="topbar">
+  <div class="brand"><div class="brandmark">✦</div>DUEL<span>UP</span></div>
+  <div style="display:flex;align-items:center;gap:10px">
+    <span id="connection" class="pill">CONNECTING…</span>
+    <button class="btn secondary small" id="nameBtn">Player 1</button>
+  </div>
+</header>
+
+<section id="home" class="view active">
+  <div class="hero">
+    <div class="eyebrow">YOUR FRIENDS. YOUR NEXT RIVAL.</div>
+    <h1>One more game.<br><em>Make it count.</em></h1>
+    <p>Private rooms, quick matchmaking, and four mini-games. Challenge your crew from any device.</p>
+    <div class="actions">
+      <button class="btn primary" id="quick">⚡ Quick match</button>
+      <button class="btn secondary" id="create">＋ Create private room</button>
+    </div>
+  </div>
+  <div class="sectionhead">
+    <div><h2>Pick your game</h2><p>Choose a game, then invite a friend or find a match.</p></div>
+    <span class="pill">4 GAMES</span>
+  </div>
+  <div class="games">
+    <button class="gamecard" data-game="pool" style="--card:#153d3b"><span class="gameicon">🎱</span><h3>8-Ball Pool</h3><p>Line it up. Sink the shot.</p><div class="cardbottom"><span>ARCADE POOL</span><span>↗</span></div></button>
+    <button class="gamecard" data-game="connect" style="--card:#282c61"><span class="gameicon">🔴</span><h3>Connect Four</h3><p>Four in a row. Block or be beaten.</p><div class="cardbottom"><span>STRATEGY</span><span>↗</span></div></button>
+    <button class="gamecard" data-game="ttt" style="--card:#55274b"><span class="gameicon">❎</span><h3>Tic-Tac-Toe</h3><p>A tiny board. A big rivalry.</p><div class="cardbottom"><span>QUICK MATCH</span><span>↗</span></div></button>
+    <button class="gamecard" data-game="ships" style="--card:#1c3c5a"><span class="gameicon">🚢</span><h3>Battleship</h3><p>Find the hidden fleet.</p><div class="cardbottom"><span>TACTICAL</span><span>↗</span></div></button>
+  </div>
+  <div class="lower">
+    <div class="panel">
+      <h3>Join a private room</h3><p class="sub">Enter your friend's room code.</p>
+      <div class="row"><input class="field" id="joinCode" placeholder="ROOM CODE" maxlength="6"><button class="btn primary" id="join">Join</button></div>
+      <div class="notice" id="homeNotice">Create a room or join one to start playing.</div>
+    </div>
+    <div class="panel">
+      <h3>Your DUEL UP stats</h3><p class="sub">The next win is yours to earn.</p>
+      <div class="stats"><div class="stat"><strong>4</strong><span>MINI-GAMES</span></div><div class="stat"><strong>2</strong><span>PLAYERS</span></div><div class="stat"><strong>∞</strong><span>REMATCHES</span></div></div>
+    </div>
+  </div>
+</section>
+
+<section id="gameView" class="view">
+  <button class="btn secondary small back" id="back">← Back to lobby</button>
+  <div class="gamehead">
+    <div><h2 id="gameTitle">Game</h2><p id="roomInfo">Room —</p></div>
+    <div class="row"><button class="btn secondary small" id="copyRoom">Copy room code</button><button class="btn secondary small" id="restart">Rematch</button></div>
+  </div>
+  <div class="game-layout">
+    <div class="panel boardpanel">
+      <div id="status" class="status">Waiting for opponent…</div>
+      <div id="board"></div><div id="gameControls" class="controls"></div>
+      <div id="waitBox" class="waitbox hide">Share your room code with a friend to begin.</div>
+    </div>
+    <aside class="panel sidepanel">
+      <h3>Match info</h3><p class="sub">Your live game details.</p><div id="players"></div>
+      <div class="divider"></div><h3>How to play</h3><p class="sub" id="rules">Take turns and try to win.</p>
+      <div class="divider"></div>
+      <div class="actionlist"><button class="btn secondary small" id="shareBtn">Invite a friend</button><button class="btn secondary small" id="leave">Leave match</button></div>
+      <p class="notice" id="sideNotice">Moves update for both players.</p>
+    </aside>
+  </div>
+</section>
+<footer class="footer"><span>DUEL UP © 2026 · PLAY FAIR. PLAY AGAIN.</span><span>Built for friendly competition.</span></footer>
+</div>
+<div class="toast" id="toast"></div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+(() => {
+const $ = id => document.getElementById(id);
+const socket = io();
+let name = localStorage.getItem("duelup-name") || "Player 1";
+let selectedGame = "ttt", room = null, myId = null, waiting = false;
+let placingShips = [], shipOrientation = "h", selectedShipLength = 4;
+let shipPlacementIndex = 0, localFleet = [], dragShip = null;
+
+const titles = { ttt:"Tic-Tac-Toe", connect:"Connect Four", ships:"Battleship", pool:"8-Ball Pool" };
+const rules = {
+  ttt:"Get three marks in a row. Player 1 uses X; Player 2 uses O.",
+  connect:"Drop discs into a column. Connect four horizontally, vertically, or diagonally.",
+  ships:"Place one ship of length 4, two of length 3, and one of length 2. Both players must press Ready before firing.",
+  pool:"Pocket your assigned balls, keep shooting after a legal pot, and legally pocket the 8-ball to win. Scratching gives your opponent ball-in-hand."
+};
+
+function toast(s) {
+  $("toast").textContent = s;
+  $("toast").classList.add("show");
+  setTimeout(() => $("toast").classList.remove("show"), 2500);
+}
+function showView(v) {
+  $("home").classList.toggle("active", v === "home");
+  $("gameView").classList.toggle("active", v === "gameView");
+}
+function setName() {
+  const n = prompt("What should your opponents call you?", name);
+  if (n && n.trim()) {
+    name = n.trim().slice(0, 18);
+    localStorage.setItem("duelup-name", name);
+    $("nameBtn").textContent = name;
+  }
+}
+$("nameBtn").onclick = setName;
+$("nameBtn").textContent = name;
+
+socket.on("connect", () => {
+  $("connection").textContent = "ONLINE";
+  $("connection").style.color = "var(--cyan)";
+  myId = socket.id;
+});
+socket.on("disconnect", () => { $("connection").textContent = "RECONNECTING…"; });
+socket.on("connect_error", () => {
+  $("connection").textContent = "OFFLINE";
+  toast("Couldn't connect to the game server. Refresh and try again.");
+});
+socket.on("action:error", msg => toast(msg));
+socket.on("lobby:count", n => {
+  $("homeNotice").textContent = n
+    ? `${n} player(s) waiting for a quick match.`
+    : "Create a room or join one to start playing.";
+});
+
+function makeRoom(game) {
+  selectedGame = game;
+  socket.emit("room:create", { game, name });
+}
+document.querySelectorAll("[data-game]").forEach(b => b.onclick = () => makeRoom(b.dataset.game));
+$("create").onclick = () => makeRoom(selectedGame);
+$("quick").onclick = () => {
+  selectedGame = (prompt("Choose a game: ttt, connect, ships, or pool", selectedGame) || selectedGame).toLowerCase();
+  if (!titles[selectedGame]) return toast("Choose ttt, connect, ships, or pool.");
+  waiting = true;
+  socket.emit("match:quick", { game: selectedGame, name });
+};
+$("join").onclick = () => {
+  const code = $("joinCode").value.trim().toUpperCase();
+  if (code) socket.emit("room:join", { code, name });
+  else toast("Enter a room code first.");
+};
+$("joinCode").addEventListener("keydown", e => { if (e.key === "Enter") $("join").click(); });
+socket.on("room:created", d => {
+  selectedGame = d.game;
+  showView("gameView");
+  toast("Room created. Share code " + d.code);
+});
+socket.on("room:joined", d => {
+  selectedGame = d.game;
+  waiting = false;
+  showView("gameView");
+});
+socket.on("match:waiting", d => {
+  waiting = true;
+  selectedGame = d.game;
+  showView("gameView");
+  $("gameTitle").textContent = titles[d.game];
+  $("status").textContent = "Searching for an opponent…";
+  $("waitBox").classList.remove("hide");
+  $("board").innerHTML = "";
+  $("roomInfo").textContent = "Quick Match";
+  $("players").innerHTML = `<p>${name}</p><p class="muted">Waiting for another player…</p>`;
+});
+socket.on("match:cancelled", () => { waiting = false; showView("home"); });
+socket.on("room:update", data => {
+  room = data;
+  selectedGame = data.game;
+  waiting = false;
+  showView("gameView");
+  render();
+});
+
+function currentPlayer() { return room?.players?.find(p => p.id === myId); }
+function myIndex() { return room?.players?.findIndex(p => p.id === myId) ?? -1; }
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({
+    "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;"
+  }[c]));
+}
+function canMove() {
+  return room && room.status === "playing" &&
+    room.turn === myIndex() + 1 && room.players.length === 2;
+}
+function render() {
+  if (!room) return;
+  $("gameTitle").textContent = titles[room.game] || "DUEL UP";
+  $("roomInfo").textContent = "Room code: " + room.code;
+  $("status").textContent = room.message || "Game ready";
+  $("rules").textContent = rules[room.game] || "Take turns and try to win.";
+  $("waitBox").classList.toggle("hide", room.players.length >= 2);
+  $("players").innerHTML = room.players.map((p, i) =>
+    `<div class="stat" style="margin-bottom:8px"><strong style="font-size:15px">${escapeHtml(p.name)} ${p.id === myId ? "(You)" : ""}</strong><span>${room.players.length < 2 ? "WAITING FOR OPPONENT" : ("PLAYER " + (i + 1) + (room.turn === i + 1 && room.status === "playing" ? " · TURN" : ""))}</span></div>`
+  ).join("");
+  $("board").innerHTML = "";
+  $("gameControls").innerHTML = "";
+  if (room.game === "ttt") renderTTT();
+  else if (room.game === "connect") renderConnect();
+  else if (room.game === "ships") renderShips();
+  else if (room.game === "pool") renderPool();
+}
+function renderTTT() {
+  const b = room.board || Array(9).fill(0);
+  const grid = document.createElement("div");
+  grid.className = "ttt";
+  b.forEach((v, i) => {
+    const btn = document.createElement("button");
+    btn.textContent = v ? (v === 1 ? "X" : "O") : "";
+    btn.disabled = !!v || !canMove();
+    btn.onclick = () => socket.emit("game:move", { index: i });
+    grid.append(btn);
+  });
+  $("board").append(grid);
+}
+function renderConnect() {
+  const b = room.board || Array(42).fill(0);
+  const grid = document.createElement("div");
+  grid.className = "c4";
+  for (let c = 0; c < 7; c++) {
+    for (let r = 0; r < 6; r++) {
+      const v = b[r * 7 + c];
+      const btn = document.createElement("button");
+      btn.className = v === 1 ? "p1" : v === 2 ? "p2" : "";
+      btn.disabled = !canMove();
+      btn.title = "Drop in column " + (c + 1);
+      btn.onclick = () => socket.emit("game:move", { column: c });
+      grid.append(btn);
+    }
+  }
+  $("board").append(grid);
+}
+function createShipList() {
+  const lengths = [4, 3, 3, 2];
+  placingShips = [];
+  localFleet = Array(100).fill(false);
+  shipPlacementIndex = 0;
+  lengths.forEach((len, i) => placingShips.push({ length: len, cells: [], placed: false, id: i }));
+}
+function randomFleet() {
+  const lengths = [4, 3, 3, 2], fleet = [], occupied = new Set();
+  for (const len of lengths) {
+    let done = false;
+    while (!done) {
+      const h = Math.random() < .5;
+      const r = Math.floor(Math.random() * 10);
+      const c = Math.floor(Math.random() * 10);
+      const cells = [];
+      for (let k = 0; k < len; k++) {
+        const rr = r + (h ? 0 : k), cc = c + (h ? k : 0);
+        if (rr > 9 || cc > 9) { cells.length = 0; break; }
+        cells.push(rr * 10 + cc);
+      }
+      if (cells.length && cells.every(i => !occupied.has(i))) {
+        cells.forEach(i => occupied.add(i));
+        fleet.push(cells);
+        done = true;
+      }
+    }
+  }
+  return fleet;
+}
+function renderShips() {
+  const b = room.board;
+  const my = myIndex();
+  const wrap = document.createElement("div");
+  wrap.className = "ship-grid-wrap";
+  if (room.status === "placing") {
+    if (!placingShips.length) createShipList();
+    const tools = document.createElement("div");
+    tools.className = "ship-tools";
+    [4, 3, 2].forEach(len => {
+      const btn = document.createElement("button");
+      btn.className = "btn secondary small" + (selectedShipLength === len ? " selected" : "");
+      btn.textContent = len + "-cell ship";
+      btn.onclick = () => { selectedShipLength = len; render(); };
+      tools.append(btn);
+    });
+    const orient = document.createElement("button");
+    orient.className = "btn secondary small";
+    orient.textContent = shipOrientation === "h" ? "Horizontal" : "Vertical";
+    orient.onclick = () => { shipOrientation = shipOrientation === "h" ? "v" : "h"; render(); };
+    tools.append(orient);
+    const random = document.createElement("button");
+    random.className = "btn secondary small";
+    random.textContent = "Random fleet";
+    random.onclick = () => {
+      const fleet = randomFleet();
+      socket.emit("ships:place", { ships: fleet });
+      placingShips = [];
+      toast("Random fleet submitted.");
+    };
+    tools.append(random);
+    wrap.append(tools);
+
+    const grid = document.createElement("div");
+    grid.className = "ships";
+    for (let i = 0; i < 100; i++) {
+      const btn = document.createElement("button");
+      btn.textContent = localFleet[i] ? "■" : "";
+      btn.className = localFleet[i] ? "ship" : "";
+      btn.onclick = () => {
+        const len = selectedShipLength;
+        const r = Math.floor(i / 10), c = i % 10;
+        const cells = [];
+        for (let k = 0; k < len; k++) {
+          const rr = r + (shipOrientation === "h" ? 0 : k);
+          const cc = c + (shipOrientation === "h" ? k : 0);
+          if (rr > 9 || cc > 9) return toast("That ship won't fit there.");
+          cells.push(rr * 10 + cc);
+        }
+        if (cells.some(cell => localFleet[cell])) return toast("Ships cannot overlap.");
+        cells.forEach(cell => localFleet[cell] = true);
+        placingShips.push({ length: len, cells, placed: true });
+        selectedShipLength = [4, 3, 3, 2].find(l => !placingShips.some(s => s.length === l && s.placed)) || 3;
+        if (placingShips.filter(s => s.placed).length >= 4) {
+          socket.emit("ships:place", { ships: placingShips.filter(s => s.placed).map(s => s.cells) });
+          toast("Fleet submitted.");
+        } else render();
+      };
+      grid.append(btn);
+    }
+    wrap.append(grid);
+    const ready = document.createElement("button");
+    ready.className = "btn primary";
+    ready.textContent = "Ready";
+    ready.onclick = () => socket.emit("ships:ready");
+    wrap.append(ready);
+    $("board").append(wrap);
+    return;
+  }
+
+  const title1 = document.createElement("div");
+  title1.className = "ship-board-title";
+  title1.textContent = "Your fleet";
+  wrap.append(title1);
+  const own = document.createElement("div");
+  own.className = "ships";
+  for (let i = 0; i < 100; i++) {
+    const btn = document.createElement("button");
+    const hit = b.incoming?.[i] === "H";
+    const miss = b.incoming?.[i] === "M";
+    btn.className = hit ? "hit" : miss ? "miss" : (b.ownFleet?.[i] ? "ship" : "");
+    btn.textContent = hit ? "×" : miss ? "•" : "";
+    btn.disabled = true;
+    own.append(btn);
+  }
+  wrap.append(own);
+
+  const title2 = document.createElement("div");
+  title2.className = "ship-board-title";
+  title2.textContent = "Opponent's waters — fire here";
+  wrap.append(title2);
+  const enemy = document.createElement("div");
+  enemy.className = "ships";
+  for (let i = 0; i < 100; i++) {
+    const btn = document.createElement("button");
+    const v = b.outgoing?.[i] || "";
+    btn.className = v === "H" ? "hit" : v === "M" ? "miss" : "";
+    btn.textContent = v === "H" ? "×" : v === "M" ? "•" : "";
+    btn.disabled = !canMove() || !!v;
+    btn.onclick = () => socket.emit("game:move", { index: i });
+    enemy.append(btn);
+  }
+  wrap.append(enemy);
+  $("board").append(wrap);
+}
+
+function renderPool() {
+  const b = room.board || { balls: [] };
+  const wrap = document.createElement("div");
+  wrap.style.width = "100%";
+
+  const hud = document.createElement("div");
+  hud.className = "pool-hud";
+  const turn = document.createElement("div");
+  turn.className = "pool-chip";
+  turn.textContent = b.ballInHand === myIndex()
+    ? "📍 Ball-in-hand: drag the cue ball"
+    : (canMove() ? "🎯 Your shot" : "⏳ Opponent's turn");
+  hud.append(turn);
+
+  const groups = document.createElement("div");
+  groups.className = "pool-chip";
+  const myGroup = (b.groups || [])[myIndex()];
+  groups.textContent = myGroup ? `You: ${myGroup}` : "Open table";
+  hud.append(groups);
+
+  const left = document.createElement("div");
+  left.className = "pool-chip";
+  left.textContent = `Balls left: ${(b.balls || []).filter(x => x.id !== 0).length}`;
+  hud.append(left);
+  wrap.append(hud);
+
+  const table = document.createElement("div");
+  table.className = "pooltable";
+  const canvas = document.createElement("canvas");
+  canvas.className = "poolcanvas";
+  canvas.setAttribute("aria-label", "Pool table. Move to aim, hold and drag backward to set power, then release to shoot.");
+  table.append(canvas);
+  wrap.append(table);
+
+  const help = document.createElement("div");
+  help.className = "pool-help";
+  help.textContent = "Move to aim. Click and drag backward to set shot power, then release. After a scratch, drag the cue ball to place it. Wait for all balls to stop before the next shot.";
+  wrap.append(help);
+  $("board").append(wrap);
+
+  const W = 900, H = 500, R = 13.2;
+  let dpr = Math.max(1, window.devicePixelRatio || 1);
+  let cw = 0, ch = 0;
+  const ctx = canvas.getContext("2d");
+  let balls = (b.balls || []).map(x => ({
+    id: Number(x.id), x: Number(x.x) * W / 100,
+    y: Number(x.y) * H / 100, vx: 0, vy: 0
+  }));
+  if (!balls.some(x => x.id === 0)) balls.unshift({ id: 0, x: W * .22, y: H * .5, vx: 0, vy: 0 });
+
+  const colors = {
+    1:"#f5d51a", 2:"#2458d8", 3:"#d92727", 4:"#8d3fc2",
+    5:"#f28c19", 6:"#24974b", 7:"#7c2020", 8:"#151515",
+    9:"#f5d51a", 10:"#2458d8", 11:"#d92727", 12:"#8d3fc2",
+    13:"#f28c19", 14:"#24974b", 15:"#7c2020"
+  };
+  let aim = { x: W * .55, y: H * .5 };
+  let dragging = false, draggingCue = false, power = 0;
+  let animating = false, shotSent = false, lastTime = 0;
+  let firstContact = null, scratched = false, railAfterContact = false;
+
+  const hasBallInHand = () => b.ballInHand === myIndex();
+  const cue = () => balls.find(x => x.id === 0);
+
+  function resize() {
+    const rect = table.getBoundingClientRect();
+    cw = Math.max(320, rect.width);
+    ch = cw / (W / H);
+    canvas.style.height = ch + "px";
+    dpr = Math.max(1, window.devicePixelRatio || 1);
+    canvas.width = Math.round(cw * dpr);
+    canvas.height = Math.round(ch * dpr);
+    ctx.setTransform(canvas.width / W, 0, 0, canvas.height / H, 0, 0);
+    draw();
+  }
+  function pocketPoints() {
+    return [[0,0],[W/2,0],[W,0],[0,H],[W/2,H],[W,H]];
+  }
+  function draw() {
+    if (!ctx) return;
+    ctx.clearRect(0, 0, W, H);
+    const grd = ctx.createLinearGradient(0, 0, W, H);
+    grd.addColorStop(0, "#167755");
+    grd.addColorStop(1, "#0c503b");
+    ctx.fillStyle = grd;
+    ctx.fillRect(0, 0, W, H);
+
+    ctx.strokeStyle = "#ffffff20";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(20, 20, W - 40, H - 40);
+
+    for (let i = 1; i < 8; i++) {
+      const x = 20 + (W - 40) * i / 8;
+      ctx.fillStyle = "#d7b27a";
+      ctx.beginPath();
+      ctx.moveTo(x, 5); ctx.lineTo(x - 4, 13); ctx.lineTo(x + 4, 13);
+      ctx.closePath(); ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(x, H - 5); ctx.lineTo(x - 4, H - 13); ctx.lineTo(x + 4, H - 13);
+      ctx.closePath(); ctx.fill();
+    }
+
+    pocketPoints().forEach(([x, y]) => {
+      ctx.beginPath();
+      ctx.arc(x, y, x === W / 2 ? 19 : 22, 0, Math.PI * 2);
+      ctx.fillStyle = "#05070a";
+      ctx.fill();
+      ctx.strokeStyle = "#c39a63";
+      ctx.lineWidth = 3;
+      ctx.stroke();
+    });
+
+    const c = cue();
+    if (c && !animating && canMove() && !hasBallInHand()) {
+      let dx = aim.x - c.x, dy = aim.y - c.y;
+      const mag = Math.hypot(dx, dy) || 1;
+      dx /= mag; dy /= mag;
+
+      ctx.save();
+      ctx.setLineDash([9, 8]);
+      ctx.strokeStyle = "#ffffffb8";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(c.x + dx * (R + 3), c.y + dy * (R + 3));
+      ctx.lineTo(c.x + dx * 210, c.y + dy * 210);
+      ctx.stroke();
+      ctx.restore();
+
+      const pull = dragging ? Math.min(100, power * 10) : 17;
+      const sx = c.x - dx * (R + 8 + pull);
+      const sy = c.y - dy * (R + 8 + pull);
+      const ex = c.x - dx * (R + 130 + pull);
+      const ey = c.y - dy * (R + 130 + pull);
+      ctx.lineCap = "round";
+      ctx.strokeStyle = "#e8c58d";
+      ctx.lineWidth = 8;
+      ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(ex, ey); ctx.stroke();
+      ctx.strokeStyle = "#6e4325";
+      ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx - dx * 18, sy - dy * 18); ctx.stroke();
+    }
+
+    balls.forEach(ball => {
+      const x = ball.x, y = ball.y;
+      ctx.save();
+      ctx.beginPath(); ctx.arc(x + 2, y + 3, R, 0, Math.PI * 2);
+      ctx.fillStyle = "#0005"; ctx.fill();
+      ctx.beginPath(); ctx.arc(x, y, R, 0, Math.PI * 2);
+      ctx.fillStyle = ball.id === 0 ? "#f5f5ed" : (colors[ball.id] || "#f5f5ed");
+      ctx.fill();
+      ctx.strokeStyle = "#ffffffa8"; ctx.lineWidth = 1.5; ctx.stroke();
+
+      if (ball.id >= 9) {
+        ctx.save();
+        ctx.beginPath(); ctx.arc(x, y, R - 1, 0, Math.PI * 2); ctx.clip();
+        ctx.fillStyle = "#f7f4e8"; ctx.fillRect(x - R, y - R / 2, R * 2, R);
+        ctx.restore();
+      }
+
+      if (ball.id !== 0) {
+        ctx.beginPath(); ctx.arc(x, y, 7.1, 0, Math.PI * 2);
+        ctx.fillStyle = "#f9f7ee"; ctx.fill();
+        ctx.fillStyle = "#141414"; ctx.font = "bold 9px Arial";
+        ctx.textAlign = "center"; ctx.textBaseline = "middle";
+        ctx.fillText(String(ball.id), x, y + .3);
+      } else {
+        ctx.beginPath(); ctx.arc(x - 4, y - 5, 4, 0, Math.PI * 2);
+        ctx.fillStyle = "#fff"; ctx.fill();
+      }
+      ctx.restore();
+    });
+
+    if (hasBallInHand()) {
+      ctx.fillStyle = "#07111ddd";
+      ctx.fillRect(W / 2 - 115, 8, 230, 25);
+      ctx.fillStyle = "#ffffff"; ctx.font = "bold 13px Arial"; ctx.textAlign = "center";
+      ctx.fillText("DRAG CUE BALL TO PLACE IT", W / 2, 25);
+    }
+
+    if (dragging && !draggingCue) {
+      ctx.fillStyle = "#07111ddd";
+      ctx.fillRect(W / 2 - 88, H - 39, 176, 25);
+      ctx.fillStyle = "#ffffff"; ctx.font = "bold 13px Arial"; ctx.textAlign = "center";
+      ctx.fillText("POWER  " + Math.round(power) + "%", W / 2, H - 22);
+      ctx.fillStyle = "#233044"; ctx.fillRect(W / 2 - 55, H - 13, 110, 4);
+      ctx.fillStyle = "#64f5dc"; ctx.fillRect(W / 2 - 55, H - 13, 110 * power / 100, 4);
+    }
+  }
+
+  function localPoint(e) {
+    const r = canvas.getBoundingClientRect();
+    return { x: (e.clientX - r.left) / r.width * W, y: (e.clientY - r.top) / r.height * H };
+  }
+
+  canvas.addEventListener("pointermove", e => {
+    const q = localPoint(e);
+    if (hasBallInHand() && dragging && draggingCue) {
+      const c = cue();
+      if (c) {
+        c.x = Math.max(R + 20, Math.min(W - R - 20, q.x));
+        c.y = Math.max(R + 20, Math.min(H - R - 20, q.y));
+      }
+    } else if (!dragging) {
+      aim = q;
+    } else {
+      const c = cue();
+      if (c) {
+        const dx = aim.x - c.x, dy = aim.y - c.y;
+        const mag = Math.hypot(dx, dy) || 1;
+        const ux = dx / mag, uy = dy / mag;
+        const pull = (c.x - q.x) * ux + (c.y - q.y) * uy;
+        power = Math.max(0, Math.min(100, pull * 1.4));
+      }
+    }
+    draw();
+  });
+
+  canvas.addEventListener("pointerdown", e => {
+    if (!canMove() || animating || room.status !== "playing") return;
+    const q = localPoint(e);
+    if (hasBallInHand()) {
+      const c = cue();
+      if (c && Math.hypot(q.x - c.x, q.y - c.y) < R * 2) {
+        dragging = true; draggingCue = true;
+        canvas.setPointerCapture?.(e.pointerId);
+        draw();
+      }
+      return;
+    }
+    if (!dragging) {
+      aim = q; dragging = true; draggingCue = false; power = 0;
+      canvas.setPointerCapture?.(e.pointerId);
+      draw();
+    }
+  });
+
+  canvas.addEventListener("pointerup", e => {
+    if (!dragging) return;
+    dragging = false;
+    const q = localPoint(e), c = cue();
+
+    if (draggingCue) {
+      draggingCue = false;
+      if (c) socket.emit("pool:placeCue", { x: c.x / W * 100, y: c.y / H * 100 });
+      draw();
+      return;
+    }
+
+    if (c) {
+      const dx = aim.x - c.x, dy = aim.y - c.y;
+      const mag = Math.hypot(dx, dy) || 1;
+      const pull = Math.max(power, Math.hypot(q.x - aim.x, q.y - aim.y) * .55);
+      power = 0;
+      if (pull < 5) { draw(); return; }
+
+      firstContact = null;
+      scratched = false;
+      railAfterContact = false;
+      const speed = 2.5 + Math.min(100, pull) * .105;
+      c.vx = dx / mag * speed;
+      c.vy = dy / mag * speed;
+      animating = true;
+      shotSent = false;
+      lastTime = performance.now();
+      step();
+    }
+    draw();
+  });
+
+  function step(now = performance.now()) {
+    if (!animating) return;
+    const dt = Math.min(2, (now - lastTime) / 16.67 || 1);
+    lastTime = now;
+    let moving = false;
+
+    for (const ball of balls) {
+      if (ball.id === -1) continue;
+      ball.x += ball.vx * dt;
+      ball.y += ball.vy * dt;
+      ball.vx *= Math.pow(.986, dt);
+      ball.vy *= Math.pow(.986, dt);
+
+      if (Math.hypot(ball.vx, ball.vy) < .055) {
+        ball.vx = 0; ball.vy = 0;
+      } else moving = true;
+
+      const nearPocket = pocketPoints().some(([px, py]) => Math.hypot(ball.x - px, ball.y - py) < 58);
+      if (ball.x < R + 20 && !nearPocket) {
+        ball.x = R + 20; ball.vx = Math.abs(ball.vx) * .82;
+        if (firstContact !== null) railAfterContact = true;
+      }
+      if (ball.x > W - R - 20 && !nearPocket) {
+        ball.x = W - R - 20; ball.vx = -Math.abs(ball.vx) * .82;
+        if (firstContact !== null) railAfterContact = true;
+      }
+      if (ball.y < R + 20 && !nearPocket) {
+        ball.y = R + 20; ball.vy = Math.abs(ball.vy) * .82;
+        if (firstContact !== null) railAfterContact = true;
+      }
+      if (ball.y > H - R - 20 && !nearPocket) {
+        ball.y = H - R - 20; ball.vy = -Math.abs(ball.vy) * .82;
+        if (firstContact !== null) railAfterContact = true;
+      }
+    }
+
+    for (let i = 0; i < balls.length; i++) {
+      for (let j = i + 1; j < balls.length; j++) {
+        const a = balls[i], z = balls[j];
+        const dx = z.x - a.x, dy = z.y - a.y;
+        const dist = Math.hypot(dx, dy), min = R * 2;
+        if (dist > 0 && dist < min) {
+          if ((a.id === 0 || z.id === 0) && firstContact === null) {
+            firstContact = a.id === 0 ? z.id : a.id;
+          }
+          const nx = dx / dist, ny = dy / dist;
+          const overlap = (min - dist) / 2;
+          a.x -= nx * overlap; a.y -= ny * overlap;
+          z.x += nx * overlap; z.y += ny * overlap;
+          const rel = (a.vx - z.vx) * nx + (a.vy - z.vy) * ny;
+          if (rel > 0) {
+            a.vx -= rel * nx; a.vy -= rel * ny;
+            z.vx += rel * nx; z.vy += rel * ny;
+          }
+        }
+      }
+    }
+
+    const ps = pocketPoints();
+    for (let i = balls.length - 1; i >= 0; i--) {
+      const ball = balls[i];
+      const pocket = ps.find(([x, y]) =>
+        Math.hypot(ball.x - x, ball.y - y) < (x === W / 2 ? 48 : 52)
+      );
+      if (pocket) {
+        if (ball.id === 0) {
+          scratched = true;
+          ball.x = W * .22; ball.y = H * .5;
+          ball.vx = 0; ball.vy = 0;
+        } else {
+          balls.splice(i, 1);
+        }
+      }
+    }
+
+    draw();
+    if (moving) requestAnimationFrame(step);
+    else {
+      animating = false;
+      sendShotResult();
+    }
+  }
+
+  function sendShotResult() {
+    if (shotSent) return;
+    shotSent = true;
+    const out = balls.map(x => ({
+      id: x.id,
+      x: Math.max(0, Math.min(100, x.x / W * 100)),
+      y: Math.max(0, Math.min(100, x.y / H * 100))
+    }));
+    socket.emit("game:move", {
+      poolShot: true, balls: out, firstContact, scratched, railAfterContact
+    });
+  }
+
+  resize();
+  window.addEventListener("resize", resize, { passive: true });
+}
+
+$("copyRoom").onclick = async () => {
+  if (!room) return;
+  try {
+    await navigator.clipboard.writeText(room.code);
+    toast("Room code copied: " + room.code);
+  } catch (e) {
+    prompt("Copy this room code:", room.code);
+  }
+};
+$("restart").onclick = () => socket.emit("game:restart");
+$("back").onclick = $("leave").onclick = () => {
+  socket.emit("room:leave");
+  room = null; waiting = false;
+  showView("home");
+};
+$("shareBtn").onclick = () => {
+  if (!room) return;
+  const text = `Join my DUEL UP game! Room code: ${room.code}`;
+  if (navigator.share) navigator.share({ title: "DUEL UP", text }).catch(() => toast(text));
+  else {
+    try {
+      navigator.clipboard.writeText(text);
+      toast("Invite copied!");
+    } catch (e) {
+      prompt("Share this invite:", text);
+    }
+  }
+};
+})();
+</script>
+</body>
+</html>
