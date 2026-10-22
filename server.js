@@ -1,3 +1,4 @@
+
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
@@ -93,8 +94,9 @@ function validateShips(ships) {
     if (!Array.isArray(ship) || ship.length !== lengths[n] || ship.some(i => !Number.isInteger(i) || i < 0 || i > 99)) return null;
     if (new Set(ship).size !== ship.length || ship.some(i => used.has(i))) return null;
     const rows = ship.map(i => Math.floor(i/10)), cols = ship.map(i => i%10);
-    const horizontal = rows.every(r => r === rows[0]) && [...cols].sort((a,b)=>a-b).every((c,j)=>j===0 || c === [...cols].sort((a,b)=>a-b)[j-1]+1);
-    const vertical = cols.every(c => c === cols[0]) && [...rows].sort((a,b)=>a-b).every((r,j)=>j===0 || r === [...rows].sort((a,b)=>a-b)[j-1]+1);
+    const sortedCols = [...cols].sort((a,b)=>a-b), sortedRows = [...rows].sort((a,b)=>a-b);
+    const horizontal = rows.every(r => r === rows[0]) && sortedCols.every((c,j)=>j===0 || c === sortedCols[j-1]+1);
+    const vertical = cols.every(c => c === cols[0]) && sortedRows.every((r,j)=>j===0 || r === sortedRows[j-1]+1);
     if (!horizontal && !vertical) return null;
     ship.forEach(i => { used.add(i); fleet[i] = true; });
     clean.push([...ship]);
@@ -103,9 +105,6 @@ function validateShips(ships) {
 }
 
 function findRoomBySocket(id) { for (const room of rooms.values()) if (playerIndex(room,id)!==-1) return room; return null; }
-function closeRoom(room, message) {
-  room.status = "finished"; room.winner = 0; room.message = message; emitRoom(room);
-}
 function leaveRoom(socket, reason = "A player left the room.") {
   const room = findRoomBySocket(socket.id);
   if (!room) return;
@@ -116,7 +115,6 @@ function leaveRoom(socket, reason = "A player left the room.") {
   else {
     room.status = "finished"; room.winner = 0; room.message = reason;
     emitRoom(room);
-    // A finished room is retained briefly so the remaining player sees the message.
     setTimeout(()=>{ if (rooms.get(room.code)===room && room.players.length<2) rooms.delete(room.code); }, 60000);
   }
   io.emit("lobby:count", queue.length);
@@ -238,7 +236,7 @@ io.on("connection", socket => {
       const i=Number(payload?.cup);
       if(!Number.isInteger(i)||i<0||i>5||b.cups[idx][i]||b.throws[idx]>=10)return reject(socket,"That cup isn't available.");
       b.throws[idx]++;
-      const success=Boolean(payload?.success); // Server clamps client result to a per-throw chance.
+      const success=Boolean(payload?.success);
       const hit=success && Math.random()<0.82;
       if(hit)b.cups[idx][i]=true;
       if(b.cups[idx].every(Boolean))finish(room,p,`${room.players[p-1].name} cleared all the cups!`);
@@ -248,7 +246,6 @@ io.on("connection", socket => {
       if(typeof payload?.angle!=="number"||typeof payload?.power!=="number")return reject(socket,"Invalid shot.");
       if(Math.abs(payload.angle)>55||payload.power<1||payload.power>10)return reject(socket,"Invalid shot settings.");
       b.shots[idx]++;
-      // Lightweight arcade shot: server owns the random outcome and shared ball state.
       let hit=null;
       if(b.balls.length && Math.random()<0.25+payload.power*0.055)hit=b.balls.splice(Math.floor(Math.random()*b.balls.length),1)[0];
       if(hit)b.pocketed[idx]++;
